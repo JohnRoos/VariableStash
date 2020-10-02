@@ -67,7 +67,9 @@ function Get-VarStashBlackList {
 
 function Push-VarStash {
     [CmdletBinding()]
-    param ()
+    param (
+        [string]$Name
+    )
 
     # Create blacklist
     $Blacklist = Get-VarStashBlackList
@@ -76,24 +78,54 @@ function Push-VarStash {
     # Remove variables which are read only, constants or private
     # https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scopeditemoptions?view=powershellsdk-7.0.0
     $WritableVariables = $AllVariables.Where({$_.Options -notin 1, 2, 9, 10})
+    # Prepare folder if needed
+    if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
+        $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
+    }
     # Write to disk
-    Export-Clixml -InputObject $WritableVariables -Path '.\VariableStash.xml' -Force
+    if ([string]::IsNullOrEmpty($Name)) {
+        $FileName = "VariableStash_$((New-Guid).Guid).xml"
+    }
+    else {
+        $FileName = "VariableStash_$Name.xml"
+    }
+    Export-Clixml -InputObject $WritableVariables -Path "$env:APPDATA\VariableStash\$FileName" -Force -Verbose
 }
 
 function Pop-VarStash {
     [CmdletBinding()]
     param ()
 
-    # Import the variables
-    $ImportedVariables = Import-Clixml -Path '.\VariableStash.xml'
-    # Set each variable in parent scope
-    foreach ($var in $ImportedVariables) {
-        if (Get-Variable -Name $var.Name -Scope 1 -ErrorAction SilentlyContinue) {
-            Write-Verbose "$($var.Name) exist"
+    # Check if we have a file to import
+    if (Test-Path -Path "$env:APPDATA\VariableStash\VariableStash.xml" -PathType 'Leaf') {  
+        # Import the variables
+        $ImportedVariables = Import-Clixml -Path "$env:APPDATA\VariableStash\VariableStash.xml"
+        # Set each variable in parent scope
+        foreach ($var in $ImportedVariables) {
+            if (Get-Variable -Name $var.Name -Scope 1 -ErrorAction SilentlyContinue) {
+                Write-Verbose "$($var.Name) exist"
+            }
+            else {
+                Write-Verbose "$($var.Name) missing"
+            }
+            Set-Variable -Name $var.Name -Scope 1 -Value $var.Value
         }
-        else {
-            Write-Verbose "$($var.Name) missing"
-        }
-        Set-Variable -Name $var.Name -Scope 1 -Value $var.Value
     }
+    else {
+        Write-Error "Stash not found"
+    }
+}
+
+function Get-VarStash {
+    param()
+
+    $stashes = Get-ChildItem -Path "$env:APPDATA\VariableStash\VariableStash_*.xml"  | Sort-Object -Property lastwritetime -Descending
+    foreach ($stash in $stashes) {
+        $props = @{
+            Name = $stash.Name.Replace('VariableStash_','').Replace('.xml','')
+            Date = $stash.LastWriteTime
+        }
+        New-Object -TypeName psobject -Property $props
+    }
+
 }
