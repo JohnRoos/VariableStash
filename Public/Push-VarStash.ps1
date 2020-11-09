@@ -2,26 +2,61 @@
 function Push-VarStash {
     [CmdletBinding()]
     param (
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript(
+            {
+                $_.IndexOfAny([System.IO.Path]::GetInvalidFileNameChars() + [char]'_') -eq -1
+            },
+            ErrorMessage = 'Name must have valid file name characters and cannot contain underscore.')]
         [string]$Name
     )
 
-    # Create blacklist
+    # Get variables
+    # Scope need to be 2 when running as a function inside a module.
+    # Scope need to be 1 when running as a function not part of a module.
+    try {
+        $AllVariables = Get-Variable -Scope 2
+    }
+    catch [System.Management.Automation.PSArgumentOutOfRangeException] {
+        try {
+            Write-Verbose "Using scope 1"
+            $AllVariables = Get-Variable -Scope 1
+        }
+        catch {
+            Throw $_
+        }
+    }
+    catch {
+        Throw "Unable to get variables. Error: $_" 
+    }
+
+    # Remove black listed variables
     $Blacklist = Get-VarStashBlackList
-    # Get variables from parent scope not in blacklist
-    $AllVariables = (Get-Variable -Scope 1).Where({$_.Name -notin $Blacklist})
+    $ApprovedVariables = $AllVariables.Where({$_.Name -notin $Blacklist})
+    
     # Remove variables which are read only, constants or private
     # https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scopeditemoptions?view=powershellsdk-7.0.0
-    $WritableVariables = $AllVariables.Where({$_.Options -notin 1, 2, 9, 10})
-    # Prepare folder if needed
-    if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
-        $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
+    $WritableApprovedVariables = $ApprovedVariables.Where({$_.Options -notin 1, 2, 9, 10})
+    
+    # Any variables left?
+    if ($WritableApprovedVariables.Count -eq 0) {
+        Write-Error -Message 'No variables to stash.' -Category ObjectNotFound 
     }
-    # Write to disk
-    if ([string]::IsNullOrEmpty($Name)) {
-        $FileName = "VariableStash_$((New-Guid).Guid).xml"
+     else {
+        # Filename
+        if ([string]::IsNullOrEmpty($Name)) {
+            $FileName = "VariableStash_$((New-Guid).Guid).xml"
+        }
+        else {
+            $FileName = "VariableStash_$Name.xml"
+        }
+
+        # Prepare folder if needed
+        if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
+            $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
+        }
+
+        # Write to disk
+        Export-Clixml -InputObject $WritableApprovedVariables -Path "$env:APPDATA\VariableStash\$FileName"
     }
-    else {
-        $FileName = "VariableStash_$Name.xml"
-    }
-    Export-Clixml -InputObject $WritableVariables -Path "$env:APPDATA\VariableStash\$FileName" -Force -Verbose
 }
