@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+   Removes a variable stash.
+.DESCRIPTION
+   Permanently removes a variable stash.
+.EXAMPLE
+   Remove-VarStash -Name MyStash
+
+   Removes the stash named MyStash.
+.EXAMPLE
+   Remove-VarStash -Index 2
+
+   Removes the stash with index position 2 (lates stash has index 0).
+.EXAMPLE
+   Remove-VarStash -Index 2 -WhatIf
+
+   Shows what would have happened if this command would run without the -WhatIf parameter.
+#>
 function Remove-VarStash {
     [CmdletBinding(DefaultParameterSetName = 'Name')]
     param(

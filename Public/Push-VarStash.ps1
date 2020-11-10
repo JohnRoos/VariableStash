@@ -1,4 +1,17 @@
+<#
+.SYNOPSIS
+   Pushes variables to the variable stash.
+.DESCRIPTION
+   Pushes variables to the variable stash. The pushed variables will be stored on the top of the stash (index 0).
+.EXAMPLE
+   Push-VariableStash
 
+   Pushes variables to the variable stash. Since the -Name parameter is omitted, a default name will be set (a guid). 
+.EXAMPLE
+   Push-VariableStash -Name MyStash
+
+   Pushes variables to the variable stash with name MyStash.
+#>
 function Push-VarStash {
     [CmdletBinding()]
     param (

@@ -1,3 +1,27 @@
+<#
+.SYNOPSIS
+   Pops a variable stash.
+.DESCRIPTION
+   Pops a variable stash. This command restores all variables from a variable stash and then removes the stash from storage. The stash can optionally be kept using the -Keep parameter.
+.EXAMPLE
+   Pop-VarStash
+
+   Pops the variables from the top of the stash (latest stash, index 0).
+.EXAMPLE
+   Pop-VarStash -Name MyStash
+
+   Pops the variables from the stash with name 'MyStash'.
+
+.EXAMPLE
+   Pop-VarStash -Index 2
+
+   Pops the variables from the stash with index position 2 (lates stash has index 0).
+
+.EXAMPLE
+    Pop-VarStash -Keep
+
+    Pops the variables from the top of the stash (latest stash, index 0). When using parameter -Keep, the stash will not be removed from storage (and the verb pop does not make any sense :) ).
+#>
 function Pop-VarStash {
     [CmdletBinding(DefaultParameterSetName = 'Keep')]
     param(
