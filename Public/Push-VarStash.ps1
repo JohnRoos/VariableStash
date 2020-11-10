@@ -11,52 +11,58 @@ function Push-VarStash {
         [string]$Name
     )
 
-    # Get variables
-    # Scope need to be 2 when running as a function inside a module.
-    # Scope need to be 1 when running as a function not part of a module.
-    try {
-        $AllVariables = Get-Variable -Scope 2
-    }
-    catch [System.Management.Automation.PSArgumentOutOfRangeException] {
+    Process {
+
+        # Get variables
+        # Scope need to be 2 when running as a function inside a module.
+        # Scope need to be 1 when running as a function not part of a module.
         try {
-            Write-Verbose "Using scope 1"
-            $AllVariables = Get-Variable -Scope 1
+            $AllVariables = Get-Variable -Scope 2
+        }
+        catch [System.Management.Automation.PSArgumentOutOfRangeException] {
+            try {
+                Write-Verbose "Using scope 1"
+                $AllVariables = Get-Variable -Scope 1
+            }
+            catch {
+                Throw $_
+            }
         }
         catch {
-            Throw $_
+            Throw "Unable to get variables. Error: $_" 
         }
-    }
-    catch {
-        Throw "Unable to get variables. Error: $_" 
-    }
 
-    # Remove black listed variables
-    $Blacklist = Get-VarStashBlackList
-    $ApprovedVariables = $AllVariables.Where({$_.Name -notin $Blacklist})
-    
-    # Remove variables which are read only, constants or private
-    # https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scopeditemoptions?view=powershellsdk-7.0.0
-    $WritableApprovedVariables = $ApprovedVariables.Where({$_.Options -notin 1, 2, 9, 10})
-    
-    # Any variables left?
-    if ($WritableApprovedVariables.Count -eq 0) {
-        Write-Error -Message 'No variables to stash.' -Category ObjectNotFound 
-    }
-     else {
-        # Filename
-        if ([string]::IsNullOrEmpty($Name)) {
-            $FileName = "VariableStash_$((New-Guid).Guid).xml"
+        # Get blacklist
+        $Blacklist = Get-VarStashBlackList
+
+        # Remove blacklisted variables
+        $ApprovedVariables = $AllVariables.Where({$_.Name -notin $Blacklist})
+        
+        # Remove variables which are read only, constants or private
+        # https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scopeditemoptions?view=powershellsdk-7.0.0
+        $WritableApprovedVariables = $ApprovedVariables.Where({$_.Options -notin 1, 2, 9, 10})
+        
+        # Any variables left?
+        if ($WritableApprovedVariables.Count -eq 0) {
+            Write-Error -Message 'No variables to stash.' -Category ObjectNotFound 
         }
         else {
-            $FileName = "VariableStash_$Name.xml"
+            # Generate filename
+            if ([string]::IsNullOrEmpty($Name)) {
+                $FileName = "VariableStash_$((New-Guid).Guid).xml"
+            }
+            else {
+                $FileName = "VariableStash_$Name.xml"
+            }
+
+            # Prepare folder if needed
+            if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
+                $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
+            }
+
+            # Write to disk
+            Export-Clixml -InputObject $WritableApprovedVariables -Path "$env:APPDATA\VariableStash\$FileName"
         }
 
-        # Prepare folder if needed
-        if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
-            $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
-        }
-
-        # Write to disk
-        Export-Clixml -InputObject $WritableApprovedVariables -Path "$env:APPDATA\VariableStash\$FileName"
     }
 }

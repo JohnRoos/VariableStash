@@ -1,10 +1,17 @@
 function Remove-VarStash {
+    [CmdletBinding(DefaultParameterSetName = 'Name')]
     param(
-        [parameter(ParameterSetName = 'Name')]
+        [parameter(Mandatory,
+                   ParameterSetName = 'Name',
+                   ValueFromPipeline = $true,
+                   ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$Name,
 
-        [parameter(ParameterSetName = 'Index')]
+        [parameter(Mandatory,
+                   ParameterSetName = 'Index',
+                   ValueFromPipeline = $true,
+                   ValueFromPipelineByPropertyName = $true)]
         [ValidateRange(0, [int]::MaxValue)]
         [int]$Index,
 
@@ -13,19 +20,23 @@ function Remove-VarStash {
         [switch]$WhatIf
     )
     
-    switch ($PSCmdlet.ParameterSetName) {
-        'Name' { 
-            $Stash = Get-VarStash -Name $Name
+    Process {
+        
+        switch ($PSCmdlet.ParameterSetName) {
+            'Name' { 
+                $Stash = Get-VarStash -Name $Name -ErrorAction Stop
+            }
+            'Index' { 
+                $Stash = Get-VarStash -Index $Index -ErrorAction Stop
+            }
         }
-        'Index' { 
-            $Stash = Get-VarStash -Index $Index
-        }
-    }
 
-    try {
-        Remove-Item -Path "$env:APPDATA\VariableStash\VariableStash_$($Stash.Name).xml" -WhatIf:$WhatIf
-    }
-    catch {
-        Throw "Unable to remove stash. Error: $_"
+        try {
+            Remove-Item -Path "$env:APPDATA\VariableStash\VariableStash_$($Stash.Name).xml" -WhatIf:$WhatIf
+        }
+        catch {
+            Throw "Unable to remove stash. Error: $_"
+        }
+
     }
 }
