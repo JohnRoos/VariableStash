@@ -1,3 +1,27 @@
+<#
+.SYNOPSIS
+   Gets one or more variable stashes.
+.DESCRIPTION
+   Gets one or more variable stashes. Returns the name and the created date for each stash.
+.EXAMPLE
+   Get-VarStash
+
+   Gets all available variable stashes.
+.EXAMPLE
+   Get-VarStash -Name MyStash
+
+   Gets the variable stash called MyStash.
+
+.EXAMPLE
+   Get-VarStash -Name My*
+
+   Gets variable stashes with names starting with 'My'.
+
+.EXAMPLE
+    Get-VarStash -Index 2
+
+    Gets the variable stash on index position 2 in the stash. Index starts with 0.
+#>
 function Get-VarStash {
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
     param(

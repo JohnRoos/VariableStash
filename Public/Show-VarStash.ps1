@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+   Shows the content of a variable stash.
+.DESCRIPTION
+   Shows the content of a variable stash. Returns objects of type PSVariable.
+.EXAMPLE
+   Show-VarStash
+
+   Shows the content of the latest stash (from top of stash, index 0)
+.EXAMPLE
+   Show-VarStash -Name MyStash
+
+   Shows the content of the stash named MyStash.
+.EXAMPLE
+   Show-VarStash -Index 2
+
+   Shows the content of the stash with index position 2 (lates stash has index 0).
+#>
 function Show-VarStash {
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
     param(

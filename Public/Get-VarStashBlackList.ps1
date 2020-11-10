@@ -1,3 +1,14 @@
+<#
+.SYNOPSIS
+   Gets the variable stash black list.
+.DESCRIPTION
+   Gets the variable stash black list. The black list contains variable names which will be ignored when pushing to variable stash.
+   These names are standard variables which are not user created.
+.EXAMPLE
+   Get-VarStashBlackList
+
+   Gets the variable stash black list.
+#>
 function Get-VarStashBlackList {
     [CmdletBinding()]
     param()
