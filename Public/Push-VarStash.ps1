@@ -70,7 +70,7 @@ function Push-VarStash {
 
             # Prepare folder if needed
             if (-not (Test-Path -Path "$env:APPDATA\VariableStash" -PathType 'Container')) {
-                $null = New-Item -Path $env:APPDATA-Name 'VariableStash' -ItemType 'Container'
+                $null = New-Item -Path $env:APPDATA -Name 'VariableStash' -ItemType 'Container'
             }
 
             # Write to disk
